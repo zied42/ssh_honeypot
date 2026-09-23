@@ -1,29 +1,33 @@
+"""Flask Web Dashboard for SSH Honeypot Analytics"""
+
+import json
 from pathlib import Path
 from flask import Flask, render_template
-import json
+from analyzer.analyzer import HoneypotLogAnalyzer
+from config.settings import WEB_HOST, WEB_PORT
 
-app = Flask(__name__, template_folder=".")  # templates are in "web"
+app = Flask(__name__, template_folder=".")
 
-# Correct path to your JSON file
-from pathlib import Path
+ANALYTICS_FILE = Path(__file__).parent.parent / "analytics_report.json"
 
-ANALYTICS_FILE = Path(__file__).parent.parent / "analyzer" / "analytics_report.json"
 
-print("Analytics file:", ANALYTICS_FILE)
-print("File exists:", ANALYTICS_FILE.exists())
-
-@app.route('/')
+@app.route("/")
 def dashboard():
     try:
-        with open(ANALYTICS_FILE, 'r') as f:
-            data = json.load(f)
-        return render_template('s.html', data=data)
-    except FileNotFoundError:
-        return f"<h1>⚠️ Error: Analytics file not found</h1><p>Looking for: {ANALYTICS_FILE.absolute()}</p>", 404
-    except Exception as e:
-        return f"<h1>Error loading data:</h1><p>{e}</p>", 500
+        if not ANALYTICS_FILE.exists():
+            analyzer = HoneypotLogAnalyzer()
+            analyzer.export_to_json(output_file=ANALYTICS_FILE, time_range_hours=720)
 
-if __name__ == '__main__':
-    print(f"Analytics file: {ANALYTICS_FILE.absolute()}")
-    print(f"File exists: {ANALYTICS_FILE.exists()}")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+        with open(ANALYTICS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        return render_template("s.html", data=data)
+
+    except FileNotFoundError:
+        return "<h1>⚠️ Notice: Analytics report generating</h1><p>Please refresh in a moment.</p>", 404
+    except Exception:
+        return "<h1>⚠️ Error loading dashboard</h1><p>An error occurred while loading analytics data.</p>", 500
+
+
+if __name__ == "__main__":
+    app.run(debug=False, host=WEB_HOST, port=WEB_PORT)
