@@ -1,0 +1,18 @@
+# Core SSH Honeypot
+paramiko>=3.0.0
+
+# Analytics Dashboard
+flask>=2.3.0
+flask-cors>=4.0.0
+
+# Optional: IP Geolocation
+requests>=2.31.0
+
+# Optional: Database support for better log management
+# sqlalchemy>=2.0.0
+# psycopg2-binary>=2.9.0  # For PostgreSQL
+
+# Optional: Advanced analytics
+# pandas>=2.0.0
+# numpy>=1.24.0
+# matplotlib>=3.7.0

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+
+# Logs
+logs/*.log
+logs/*.log.*
+
+# SSH Keys
+*.key
+host.key
+
+
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
