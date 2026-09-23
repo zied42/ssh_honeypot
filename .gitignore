@@ -1,26 +1,22 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-*.egg-info/
-
-# Logs
-logs/*.log
-logs/*.log.*
-
-# SSH Keys
-*.key
-host.key
-
-
+# IDE & Editor files
 .idea/
-*.swp
-*.swo
+.vscode/
 
-# OS
-.DS_Store
-Thumbs.db
+# Honeypot Data & Logs
+data/
+logs/
+*.key
+
+# Analytics Output Reports
+analytics_report.json
+analytics_report.md
+web/analytics_report.json
+
+# Python Bytecode & Environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+venv/
+env/
