@@ -397,16 +397,67 @@ def process_command_line(full_cmd, cwd, username, session_id, ip, history):
 
 
 def handle_exec_mode(channel, exec_command, ip, username, session_id):
-    """Process non-interactive SSH exec mode commands (ssh user@host 'cmd')"""
+    """Process non-interactive SSH exec mode commands (ssh user@host 'cmd').
+    Unlike interactive mode, we do NOT send the banner. Just run the command(s),
+    send raw output, send exit_status(0), then close the channel."""
     home = ensure_user_home(username)
     history = []
-    output, _, _ = process_command_line(exec_command, home, username, session_id, ip, history)
+
+    # Split and process all subcommands (handles cmd1; cmd2 && cmd3 etc.)
+    subcommands = split_command_line(exec_command)
+    combined_output = []
+    current_cwd = home
+
+    for sub_cmd in subcommands:
+        sub_cmd = sub_cmd.strip()
+        if not sub_cmd:
+            continue
+        out, current_cwd, should_exit = execute_emulated_command(
+            sub_cmd, current_cwd, username, session_id, ip, history
+        )
+        if out:
+            combined_output.append(out)
+        if should_exit:
+            break
+
+    # Log the full exec command as a single command event
+    from honeylog.logger import cmd_logger
+    log_event(
+        cmd_logger,
+        event_type="command",
+        session_id=session_id,
+        src_ip=ip,
+        username=username,
+        command=exec_command,
+        mode="exec"
+    )
+
+    # Detect threats on full exec command
+    severity, matched_rules, category, mitre_attack, iocs = detect_attack(exec_command)
+    if severity in ("MEDIUM", "HIGH"):
+        log_alert(
+            session_id=session_id,
+            src_ip=ip,
+            username=username,
+            severity=severity,
+            hits=matched_rules,
+            category=category,
+            mitre_attack=mitre_attack,
+            command=exec_command,
+            iocs=iocs
+        )
+
+    output = "".join(combined_output)
     if output:
-        # Convert \n to \r\n for terminal formatting
-        formatted_output = output.replace("\n", "\r\n")
-        channel.send(formatted_output.encode("utf-8"))
+        # Use \n only — exec mode output is not a PTY
+        channel.sendall(output.encode("utf-8"))
+
     try:
         channel.send_exit_status(0)
+    except Exception:
+        pass
+    try:
+        channel.close()
     except Exception:
         pass
 
