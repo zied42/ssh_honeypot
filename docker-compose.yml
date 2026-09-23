@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  ssh_honeypot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ssh_honeypot
+    restart: unless-stopped
+    ports:
+      # Map host port 22 to container internal honeypot port 2222
+      # Ensure real VPS SSH service has been moved to a custom port (e.g. 22222)!
+      - "22:2222"
+    volumes:
+      - honeypot_data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - "no-new-privileges:true"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+          pids: 50
+    networks:
+      honeypot_net:
+
+networks:
+  honeypot_net:
+    internal: true  # Block outbound internet access from container
+
+volumes:
+  honeypot_data:
+    driver: local
